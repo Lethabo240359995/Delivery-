@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TTS Woodworks - Delivery Note Generator</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Arial,sans-serif;background:#f3f4f6;padding:20px}
+.container{max-width:900px;margin:auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1)}
+h1{text-align:center;color:#000;margin:5px 0;font-size:22px;letter-spacing:2px}
+h2{text-align:center;color:#000;margin:5px 0 15px 0;font-size:12px;font-weight:normal}
+.section-title{font-weight:bold;background:#1e3a8a;color:#fff;padding:6px 12px;margin-bottom:12px;border-radius:4px;font-size:14px}
+.row{display:flex;gap:10px;margin:8px 0;flex-wrap:wrap}
+.row input,.row textarea,.row select{flex:1;padding:8px;border:1px solid #ccc;border-radius:4px;min-width:100px;font-size:13px}
+textarea{resize:vertical;min-height:45px}
+button{padding:10px 18px;background:#2563eb;color:#fff;border:0;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px}
+button:hover{background:#1e40af}
+.btn-danger{background:#dc2626}
+.btn-danger:hover{background:#b91c1c}
+.btn-gray{background:#6b7280}
+.btn-gray:hover{background:#4b5563}
+.btn-success{background:#059669}
+.btn-success:hover{background:#047857}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #000;padding:8px;font-size:12px}
+th{background:#e5e7eb;text-align:center;font-weight:bold}
+td{text-align:left}
+td.center{text-align:center}
+td.right{text-align:right}
+.totalBox{width:280px;margin-left:auto;margin-top:12px}
+.totalBox td{padding:6px;border:0;font-size:13px}
+.footer{display:flex;justify-content:space-between;margin-top:30px;font-size:10px;border-top:2px solid #000;padding-top:12px}
+.terms{font-size:8px;margin-top:12px;padding:10px;background:#f9f9f9;border:1px solid #ddd;border-radius:4px;line-height:1.6}
+.delete-btn{background:#dc2626;padding:3px 10px;color:#fff;border:0;cursor:pointer;border-radius:3px;font-size:11px}
+.delete-btn:hover{background:#b91c1c}
+.badge{display:inline-block;padding:5px 20px;border-radius:4px;color:#fff;font-weight:bold;font-size:16px}
+.badge-delivery{background:#059669}
+.doc-header{text-align:center;margin:10px 0}
+.free-item{color:#666;font-style:italic}
+.free-item td{color:#666}
+@media print{
+  .no-print{display:none !important}
+  body{background:#fff;padding:0}
+  .container{box-shadow:none;padding:15px;border-radius:0}
+  .badge{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  th{background:#e5e7eb !important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+  .terms{background:#f9f9f9 !important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<!-- HEADER -->
+<h1>TTS WOODWORKS</h1>
+<h2>MANUFACTURER & SUPPLIER OF QUALITY<br>WOODEN DOORS</h2>
+
+<!-- DELIVERY NOTE BADGE -->
+<div class="doc-header">
+<span class="badge badge-delivery">📦 DELIVERY NOTE</span>
+</div>
+
+<!-- DOCUMENT DETAILS -->
+<div class="section-title">📋 Document Details</div>
+<div class="row">
+<input id="deliveryNo" placeholder="DELIVERY NOTE NO:" value="THUL13/05/036752/R">
+<input id="vatNo" placeholder="VAT NO:" value="4910263976">
+</div>
+<div class="row">
+<input id="customer" placeholder="INVOICE TO:" value="LADUMA HARDWARE AND BRICKS (PTY) LTD">
+<input id="date" type="date">
+</div>
+<div class="row">
+<textarea id="customerAddr" placeholder="Customer Address" rows="2">STREET, ROCKYDRIFT, WHITE RIVER, 1240</textarea>
+<textarea id="deliveredTo" placeholder="DELIVERED TO:" rows="2">THULAMAHASHE BRANCH</textarea>
+</div>
+<div class="row">
+<input id="custVat" placeholder="CUSTOMER VAT NO:" value="4810178519">
+</div>
+
+<!-- PRODUCT CATALOGUE (Hidden in print) -->
+<div class="section-title no-print">📦 Product Catalogue</div>
+<div class="row no-print">
+<input id="prodCode" placeholder="Product Code">
+<input id="prodDesc" placeholder="Description">
+<input id="prodPrice" type="number" placeholder="Unit Price" step="0.01">
+<button id="saveProductBtn">💾 Save Product</button>
+</div>
+
+<!-- ADD ITEMS (Hidden in print) -->
+<div class="section-title no-print">➕ Add Items</div>
+<div class="row no-print">
+<select id="productList"><option value="">-- Select from Catalogue --</option></select>
+<input id="itemQty" type="number" placeholder="QTY" value="1" min="1">
+<input id="itemCode" placeholder="OR Enter Code">
+<input id="itemDesc" placeholder="Description">
+<input id="itemPrice" type="number" placeholder="Unit Price" step="0.01">
+<button id="addBtn">➕ Add Item</button>
+</div>
+<div class="row no-print">
+<button id="addFreeBtn" class="btn-success">➕ Add Free Item (No Charge)</button>
+<button id="clearBtn" class="btn-gray">🗑 Clear All</button>
+</div>
+<div class="row no-print">
+<input id="freeItem" placeholder="Free Item Description (e.g. DOOR PIVOT NO CHARGE)" value="DOOR PIVOT NO CHARGE">
+</div>
+<hr class="no-print">
+
+<!-- DELIVERY NOTE TABLE -->
+<table>
+<thead>
+<tr>
+<th style="width:15%">ITEM CODE</th>
+<th style="width:8%">QUANTITY</th>
+<th style="width:40%">DESCRIPTION</th>
+<th style="width:17%">UNIT PRICE</th>
+<th style="width:15%">TOTAL</th>
+<th style="width:5%" class="no-print">DEL</th>
+</tr>
+</thead>
+<tbody id="tbody">
+<tr><td colspan="6" style="text-align:center;color:#888;padding:20px">No items added yet</td></tr>
+</tbody>
+</table>
+
+<!-- TOTALS - ALL SHOW XXXXXX -->
+<div class="totalBox">
+<table>
+<tr><td><b>SUBTOTAL</b></td><td id="sub" style="text-align:right"><b>XXXXXX</b></td></tr>
+<tr><td><b>VAT 15%</b></td><td id="vat" style="text-align:right"><b>XXXXXX</b></td></tr>
+<tr><td><b>TOTAL</b></td><td id="total" style="text-align:right"><b>XXXXXX</b></td></tr>
+<tr><td><b>BAL DUE</b></td><td id="bal" style="text-align:right"><b>XXXXXX</b></td></tr>
+</table>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+<div>
+<b>BANKING DETAILS</b><br>
+ACC: 627 817 533 16<br>
+B/CODE: 250 602<br>
+FIRST NATIONAL BANK<br>
+TZANEEN CROSSING
+</div>
+<div style="text-align:right">
+06 BOTHA STREET<br>
+MODJADJISKLOOF<br>
+0835<br><br>
+TEL: 072 710 6877<br>
+079 113 7847<br>
+FAX: 086 607 9838<br>
+E-MAIL: ttswoodmanf@webmail.co.za
+</div>
+</div>
+
+<!-- TERMS -->
+<div class="terms">
+<b>TERMS AND CONDITIONS:</b><br>
+All goods will remain property of TTS 75(PTY) LTD until fully paid for. No correctly supplied items will be refunded. Buyouts and cut items will not be refundable.
+</div>
+
+<!-- PRINT BUTTON -->
+<div class="no-print" style="text-align:center;margin-top:20px">
+<button id="printBtn">🖨 Print Delivery Note / Save as PDF</button>
+</div>
+</div>
+
+<script>
+// ============================================
+// DELIVERY NOTE GENERATOR - ALL PRICES SHOW XXXXXX
+// ============================================
+
+let products = [];
+let items = [];
+const tbody = document.getElementById('tbody');
+
+// Set today's date
+document.getElementById('date').valueAsDate = new Date();
+
+// ========== LOAD PRODUCTS ==========
+function loadProducts() {
+    const stored = localStorage.getItem('tts_delivery_products');
+    if (stored) {
+        try {
+            products = JSON.parse(stored);
+        } catch(e) {
+            products = [];
+        }
+    }
+    
+    if (products.length === 0) {
+        products = [
+            {code: 'DPVTD8P', desc: 'DOOR PIVOT DESIGNER 8 PANEL WOOD HANDLE', price: 850.00},
+            {code: 'DPVTRM', desc: 'DOOR PIVOT RHYTHM WOOD', price: 780.00},
+            {code: 'DPVTSR', desc: 'DOOR PIVOT SUNRISE', price: 720.00},
+            {code: 'DS8PTTS', desc: 'DOOR STANDARD 8 PANEL TTS', price: 550.00},
+            {code: 'DSHSLTTTS', desc: 'DOOR STANDARD HORIZONTAL SLAT TTS', price: 600.00},
+            {code: 'DSTAB8PTTS', desc: 'DOOR STABLE 8 PANEL TTS', price: 650.00},
+            {code: 'DSTABDSR', desc: 'DOOR STABLE DESIGNER SUNRISE', price: 669.57},
+            {code: 'DSTABHK', desc: 'DOOR STABLE HAWK', price: 700.00}
+        ];
+        localStorage.setItem('tts_delivery_products', JSON.stringify(products));
+    }
+    refreshProductList();
+}
+
+// ========== REFRESH DROPDOWN ==========
+function refreshProductList() {
+    const list = document.getElementById('productList');
+    list.innerHTML = '<option value="">-- Select from Catalogue --</option>';
+    for (let i = 0; i < products.length; i++) {
+        const p = products[i];
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = p.code + ' - ' + p.desc + ' (R' + p.price.toFixed(2) + ')';
+        list.appendChild(opt);
+    }
+}
+
+// ========== SAVE PRODUCT ==========
+document.getElementById('saveProductBtn').addEventListener('click', function() {
+    const code = document.getElementById('prodCode').value.trim();
+    const desc = document.getElementById('prodDesc').value.trim();
+    const price = parseFloat(document.getElementById('prodPrice').value);
+    
+    if (!code || !desc || isNaN(price) || price <= 0) {
+        alert('Please enter valid code, description, and price');
+        return;
+    }
+    
+    for (let i = 0; i < products.length; i++) {
+        if (products[i].code.toLowerCase() === code.toLowerCase()) {
+            alert('Product code already exists!');
+            return;
+        }
+    }
+    
+    products.push({code, desc, price});
+    localStorage.setItem('tts_delivery_products', JSON.stringify(products));
+    refreshProductList();
+    
+    document.getElementById('prodCode').value = '';
+    document.getElementById('prodDesc').value = '';
+    document.getElementById('prodPrice').value = '';
+    
+    alert('✅ Product "' + code + '" saved!');
+});
+
+// ========== RENDER DELIVERY NOTE ==========
+function render() {
+    tbody.innerHTML = '';
+    
+    if (items.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;padding:20px">No items added yet</td></tr>';
+    } else {
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const tr = document.createElement('tr');
+            
+            // Check if it's a free item (price = 0 or marked as free)
+            const isFree = item.isFree || item.price === 0;
+            
+            if (isFree) {
+                tr.className = 'free-item';
+                tr.innerHTML = `
+                    <td></td>
+                    <td class="center">${String(item.qty).padStart(2, '0')}</td>
+                    <td>${item.desc}</td>
+                    <td class="right">XXXXXX</td>
+                    <td class="right">XXXXXX</td>
+                    <td class="no-print"><button class="delete-btn" onclick="deleteItem(${i})">X</button></td>
+                `;
+            } else {
+                tr.innerHTML = `
+                    <td>${item.code}</td>
+                    <td class="center">${String(item.qty).padStart(2, '0')}</td>
+                    <td>${item.desc}</td>
+                    <td class="right">XXXXXX</td>
+                    <td class="right">XXXXXX</td>
+                    <td class="no-print"><button class="delete-btn" onclick="deleteItem(${i})">X</button></td>
+                `;
+            }
+            tbody.appendChild(tr);
+        }
+    }
+    
+    // All totals show XXXXXX - no calculations displayed
+    document.getElementById('sub').innerHTML = 'XXXXXX';
+    document.getElementById('vat').innerHTML = 'XXXXXX';
+    document.getElementById('total').innerHTML = 'XXXXXX';
+    document.getElementById('bal').innerHTML = 'XXXXXX';
+}
+
+// ========== DELETE ITEM ==========
+window.deleteItem = function(i) {
+    if (confirm('Remove this item?')) {
+        items.splice(i, 1);
+        render();
+    }
+}
+
+// ========== ADD ITEM ==========
+document.getElementById('addBtn').addEventListener('click', function() {
+    let code, desc, price;
+    let qty = parseInt(document.getElementById('itemQty').value);
+    const selectedIndex = document.getElementById('productList').value;
+    
+    if (selectedIndex !== '') {
+        const product = products[parseInt(selectedIndex)];
+        if (!product) return;
+        code = product.code;
+        desc = product.desc;
+        price = product.price;
+    } else {
+        code = document.getElementById('itemCode').value.trim();
+        desc = document.getElementById('itemDesc').value.trim();
+        price = parseFloat(document.getElementById('itemPrice').value);
+        
+        if (!code || !desc || isNaN(price) || price < 0) {
+            alert('Please enter valid Item Code, Description, and Price');
+            return;
+        }
+    }
+    
+    if (isNaN(qty) || qty < 1) {
+        alert('Quantity must be at least 1');
+        return;
+    }
+    
+    // Check if item already exists (only for non-free items)
+    let found = false;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].code.toLowerCase() === code.toLowerCase() && !items[i].isFree && price > 0) {
+            items[i].qty += qty;
+            items[i].total = items[i].qty * items[i].price;
+            found = true;
+            break;
+        }
+    }
+    
+    if (!found) {
+        items.push({code, desc, qty, price, total: price * qty, isFree: false});
+    }
+    
+    render();
+    
+    document.getElementById('itemCode').value = '';
+    document.getElementById('itemDesc').value = '';
+    document.getElementById('itemPrice').value = '';
+    document.getElementById('itemQty').value = '1';
+    document.getElementById('productList').value = '';
+});
+
+// ========== ADD FREE ITEM ==========
+document.getElementById('addFreeBtn').addEventListener('click', function() {
+    const desc = document.getElementById('freeItem').value.trim();
+    
+    if (!desc) {
+        alert('Please enter a description for the free item');
+        return;
+    }
+    
+    items.push({
+        code: '',
+        desc: desc,
+        qty: 1,
+        price: 0,
+        total: 0,
+        isFree: true
+    });
+    
+    render();
+    document.getElementById('freeItem').value = 'DOOR PIVOT NO CHARGE';
+});
+
+// ========== CLEAR ALL ==========
+document.getElementById('clearBtn').addEventListener('click', function() {
+    if (confirm('Clear all items?')) {
+        items = [];
+        render();
+    }
+});
+
+// ========== PRINT ==========
+document.getElementById('printBtn').addEventListener('click', function() {
+    window.print();
+});
+
+// ========== DROPDOWN AUTO-FILL ==========
+document.getElementById('productList').addEventListener('change', function() {
+    const index = this.value;
+    if (index !== '') {
+        const product = products[parseInt(index)];
+        if (product) {
+            document.getElementById('itemCode').value = product.code;
+            document.getElementById('itemDesc').value = product.desc;
+            document.getElementById('itemPrice').value = product.price;
+        }
+    }
+});
+
+// ========== KEYBOARD SHORTCUTS ==========
+document.getElementById('itemPrice').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('addBtn').click();
+    }
+});
+
+document.getElementById('prodPrice').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('saveProductBtn').click();
+    }
+});
+
+document.getElementById('freeItem').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('addFreeBtn').click();
+    }
+});
+
+// ========== INITIALIZE ==========
+loadProducts();
+render();
+
+console.log('✅ TTS Delivery Note Generator Ready!');
+console.log('📦 Products loaded:', products.length);
+console.log('💡 ALL prices show as XXXXXX on the delivery note');
+</script>
+</body>
+</html>
